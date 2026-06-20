@@ -26,6 +26,28 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
   }
 });
 
+// Listen for sync messages from the dashboard web page (via Content Script)
+chrome.runtime.onMessage.addListener(async (message) => {
+  if (message.type === "FOCUS_GUARD_SYNC") {
+    let dbUrl = message.databaseURL;
+    if (dbUrl && dbUrl.endsWith('/')) {
+      dbUrl = dbUrl.slice(0, -1);
+    }
+    await chrome.storage.local.set({
+      syncKey: message.syncKey,
+      databaseURL: dbUrl,
+      lastActiveCheck: Date.now()
+    });
+    handleTabChange();
+  } else if (message.type === "FOCUS_GUARD_TIMER") {
+    await chrome.storage.local.set({
+      activeTaskId: message.activeTaskId,
+      lastActiveCheck: Date.now()
+    });
+    handleTabChange();
+  }
+});
+
 
 /**
  * Main event handler triggered on tab switch, url load, window focus, or periodic alarm.
@@ -118,41 +140,22 @@ async function fetchActiveTaskId(dbUrl, userId) {
 
 /**
  * Synchronize visited site elapsed duration to Firebase using REST API.
+ * Uses a single PATCH with increment operation and removes the redundant domain field to minimize bandwidth and storage.
  */
 async function syncSiteTime(dbUrl, userId, taskId, siteUrl, domain, elapsedSeconds) {
   const siteKey = getSafeKey(siteUrl);
   const siteUrlNode = `${dbUrl}/users/${userId}/tasks/${taskId}/sites/${siteKey}.json`;
 
   try {
-    // Step A: Fetch current site log details
-    const res = await fetch(siteUrlNode);
-    if (!res.ok) throw new Error(`HTTP status ${res.status}`);
-    const currentSiteData = await res.json();
-
-    if (!currentSiteData) {
-      // Step B1: Site does not exist yet under this task. Create it with PATCH
-      const patchRes = await fetch(siteUrlNode, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          url: siteUrl,
-          dom: domain,
-          dur: elapsedSeconds,
-          cat: 'none',
-          cmt: ''
-        })
-      });
-      if (!patchRes.ok) throw new Error(`PATCH status ${patchRes.status}`);
-    } else {
-      // Step B2: Site exists. Update duration with PUT on the specific dur node
-      const newDur = (currentSiteData.dur || 0) + elapsedSeconds;
-      const putRes = await fetch(`${dbUrl}/users/${userId}/tasks/${taskId}/sites/${siteKey}/dur.json`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newDur)
-      });
-      if (!putRes.ok) throw new Error(`PUT status ${putRes.status}`);
-    }
+    const patchRes = await fetch(siteUrlNode, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        url: siteUrl,
+        dur: { ".sv": { "increment": elapsedSeconds } }
+      })
+    });
+    if (!patchRes.ok) throw new Error(`PATCH status ${patchRes.status}`);
   } catch (e) {
     console.error("Failed to sync site time to Firebase:", e);
   }

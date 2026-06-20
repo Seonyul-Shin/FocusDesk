@@ -142,6 +142,13 @@ if (isFirebaseConfigured) {
       userEmailSpan.textContent = user.email;
       syncKeyValue.value = user.uid; // Setup extension sync key
       
+      // Automatically sync credentials with Chrome extension
+      window.postMessage({
+        type: "FOCUS_GUARD_SYNC",
+        syncKey: user.uid,
+        databaseURL: firebaseConfig.databaseURL
+      }, "*");
+      
       // Switch views
       authView.classList.remove('active');
       dashboardView.classList.add('active');
@@ -264,6 +271,12 @@ function initDatabaseListeners() {
   // 2. Listen to active running task status
   onValue(userActiveRef, (snapshot) => {
     const activeId = snapshot.val();
+    
+    // Instantly notify Chrome extension of the active timer task ID
+    window.postMessage({
+      type: "FOCUS_GUARD_TIMER",
+      activeTaskId: activeId
+    }, "*");
     
     // If running task changes, handle UI timers
     if (activeId) {
@@ -417,7 +430,7 @@ function renderTasksList() {
       <div class="task-meta">
         <span>${dateStr}</span>
         <span class="task-indicator">
-          ${isRunning ? '<i data-lucide="clock" class="text-xs"></i> 진행중' : `<i data-lucide="hourglass" class="text-xs text-dark"></i> ${durationFormatted}`}
+          ${isRunning ? '<i data-lucide="clock" class="text-xs"></i> 진행중' : `<i data-lucide="file-text" class="text-xs text-dark"></i> ${durationFormatted}`}
         </span>
       </div>
     `;
@@ -598,14 +611,19 @@ function renderSitesBoard(sitesObj) {
       `;
     }
 
+    let computedDomain = '사이트';
+    try {
+      computedDomain = new URL(site.url).hostname;
+    } catch (e) {}
+
     card.innerHTML = `
       <div class="site-card-header">
         <div class="site-info">
-          <span class="site-domain" title="${escapeHtml(site.dom || '')}">
-            <img src="https://www.google.com/s2/favicons?sz=32&domain=${site.dom || 'google.com'}" 
+          <span class="site-domain" title="${escapeHtml(computedDomain)}">
+            <img src="https://www.google.com/s2/favicons?sz=32&domain=${computedDomain}" 
                  style="width: 14px; height: 14px; margin-right: 4px; vertical-align: text-top; border-radius:2px;" 
                  onerror="this.style.display='none'">
-            ${escapeHtml(site.dom || '사이트')}
+            ${escapeHtml(computedDomain)}
           </span>
           <a class="site-url" href="${escapeHtml(site.url)}" target="_blank" title="${escapeHtml(site.url)}">${escapeHtml(site.url)}</a>
         </div>
@@ -681,16 +699,17 @@ window.moveSiteCategory = function(siteKey, newCat) {
   const userId = currentUser.uid;
   
   const siteRef = ref(db, `users/${userId}/tasks/${activeTaskId}/sites/${siteKey}`);
-  update(siteRef, { cat: newCat })
+  update(siteRef, { cat: newCat === 'none' ? null : newCat })
     .catch(err => console.error("카테고리 이동 오류:", err));
 };
 
 window.updateSiteComment = function(siteKey, value) {
   if (!currentUser || !activeTaskId) return;
   const userId = currentUser.uid;
+  const commentVal = value.trim();
   
   const siteRef = ref(db, `users/${userId}/tasks/${activeTaskId}/sites/${siteKey}`);
-  update(siteRef, { cmt: value.trim() })
+  update(siteRef, { cmt: commentVal || null })
     .catch(err => console.error("댓글 업로드 오류:", err));
 };
 
