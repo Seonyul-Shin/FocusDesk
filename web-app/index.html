@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FocusGuard - 과제 집중 도우미</title>
+  <!-- Google Fonts for Modern Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Lucide Icons (CDN) for UI styling -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ================= AUTH VIEW ================= -->
+  <div id="auth-view" class="view-container active">
+    <div class="auth-card glass">
+      <div class="auth-header">
+        <div class="logo-area">
+          <i data-lucide="shield-alert" class="logo-icon animate-pulse"></i>
+          <h1>FocusGuard</h1>
+        </div>
+        <p class="subtitle">과제 중 딴짓 방지 & 집중도 기록</p>
+      </div>
+
+      <!-- Auth Tabs -->
+      <div class="auth-tabs">
+        <button id="tab-login" class="auth-tab active" onclick="switchAuthTab('login')">로그인</button>
+        <button id="tab-signup" class="auth-tab" onclick="switchAuthTab('signup')">회원가입</button>
+      </div>
+
+      <!-- Login Form -->
+      <form id="login-form" class="auth-form active">
+        <div class="form-group">
+          <label for="login-email"><i data-lucide="mail"></i> 이메일</label>
+          <input type="email" id="login-email" required placeholder="example@email.com">
+        </div>
+        <div class="form-group">
+          <label for="login-password"><i data-lucide="lock"></i> 비밀번호</label>
+          <input type="password" id="login-password" required placeholder="비밀번호를 입력하세요">
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">로그인</button>
+      </form>
+
+      <!-- SignUp Form -->
+      <form id="signup-form" class="auth-form">
+        <div class="form-group">
+          <label for="signup-email"><i data-lucide="mail"></i> 이메일</label>
+          <input type="email" id="signup-email" required placeholder="example@email.com">
+        </div>
+        <div class="form-group">
+          <label for="signup-password"><i data-lucide="lock"></i> 비밀번호 (6자 이상)</label>
+          <input type="password" id="signup-password" required placeholder="비밀번호를 입력하세요" minlength="6">
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">회원가입</button>
+      </form>
+
+      <div id="auth-error" class="auth-error-msg hidden"></div>
+    </div>
+  </div>
+
+  <!-- ================= DASHBOARD VIEW ================= -->
+  <div id="dashboard-view" class="view-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo-area">
+          <i data-lucide="shield-check" class="logo-icon text-success"></i>
+          <h2>FocusGuard</h2>
+        </div>
+      </div>
+
+      <!-- User Widget -->
+      <div class="user-profile">
+        <div class="avatar">
+          <i data-lucide="user"></i>
+        </div>
+        <div class="user-info">
+          <span id="user-email" class="email">user@email.com</span>
+          <span class="status-badge online">Online</span>
+        </div>
+        <button id="btn-logout" class="btn-icon-only" title="로그아웃">
+          <i data-lucide="log-out"></i>
+        </button>
+      </div>
+
+      <!-- Task Navigation List -->
+      <div class="sidebar-menu">
+        <div class="menu-label-container">
+          <span class="menu-label">내 과제 목록</span>
+          <button id="btn-show-add-task" class="btn btn-xs btn-primary-outline">
+            <i data-lucide="plus"></i> 추가
+          </button>
+        </div>
+        <div id="task-list" class="task-list-container">
+          <!-- Dynamically filled tasks -->
+          <div class="empty-state-list">생성된 과제가 없습니다.</div>
+        </div>
+      </div>
+
+      <!-- Extension Guide Widget -->
+      <div class="extension-widget glass">
+        <div class="widget-header">
+          <i data-lucide="chrome" class="chrome-icon"></i>
+          <h4>크롬 확장프로그램</h4>
+        </div>
+        <p>노트북 탭 추적을 위해 확장이 필수적입니다.</p>
+        <button class="btn btn-xs btn-secondary-outline btn-block" onclick="openModal('guide-modal')">
+          <i data-lucide="help-circle"></i> 연동 방법 보기
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Workspace -->
+    <main class="workspace">
+      <!-- Empty Workspace State -->
+      <div id="empty-workspace" class="empty-workspace active">
+        <div class="empty-workspace-content">
+          <div class="empty-illustration">
+            <i data-lucide="hourglass" class="hourglass-icon"></i>
+            <div class="ring-pulse"></div>
+          </div>
+          <h3>과제를 선택하거나 새로 추가해보세요</h3>
+          <p>왼쪽 사이드바에서 과제를 선택하고 타이머를 켜면 사이트 추적이 시작됩니다.</p>
+          <button onclick="openModal('add-task-modal')" class="btn btn-primary mt-4">
+            <i data-lucide="plus"></i> 과제 추가하기
+          </button>
+        </div>
+      </div>
+
+      <!-- Active Workspace State -->
+      <div id="active-workspace" class="workspace-layout hidden">
+        <!-- Workspace Header -->
+        <header class="workspace-header">
+          <div class="title-section">
+            <h1 id="active-task-title">알고리즘 과제 1</h1>
+            <p id="active-task-created" class="task-date">생성일: 2026-06-14</p>
+          </div>
+          <div class="action-section">
+            <button id="btn-delete-task" class="btn btn-danger-outline" title="과제 삭제">
+              <i data-lucide="trash-2"></i> 과제 삭제
+            </button>
+          </div>
+        </header>
+
+        <!-- Stats & Timer Panel Grid -->
+        <div class="dashboard-grid">
+          <!-- Timer Card -->
+          <div class="dashboard-card glass timer-card">
+            <h3>집중 타이머</h3>
+            <div id="timer-display" class="timer-display">00:00:00</div>
+            <div class="timer-controls">
+              <button id="btn-timer-start" class="btn btn-success btn-lg">
+                <i data-lucide="play"></i> 시작
+              </button>
+              <button id="btn-timer-stop" class="btn btn-danger btn-lg" disabled>
+                <i data-lucide="square"></i> 중지
+              </button>
+            </div>
+            <div id="timer-status-bar" class="timer-status-bar">
+              <span class="status-dot"></span>
+              <span id="timer-status-text">대기 중</span>
+            </div>
+          </div>
+
+          <!-- Productivity Stats Card -->
+          <div class="dashboard-card glass stats-card">
+            <h3>집중도 분석</h3>
+            <div class="chart-container">
+              <div class="radial-progress-container">
+                <svg viewBox="0 0 100 100" class="radial-svg">
+                  <circle cx="50" cy="50" r="40" class="circle-bg"></circle>
+                  <circle cx="50" cy="50" r="40" id="radial-progress" class="circle-fg" stroke-dasharray="251.2" stroke-dashoffset="251.2"></circle>
+                </svg>
+                <div class="radial-text">
+                  <span id="prod-ratio-text">0%</span>
+                  <span class="radial-sub">유용함</span>
+                </div>
+              </div>
+            </div>
+            <div class="stats-details">
+              <div class="stat-row">
+                <span class="label"><i data-lucide="check-circle" class="text-success text-xs"></i> 과제/공부 시간</span>
+                <span id="stat-work-time" class="value">0초</span>
+              </div>
+              <div class="stat-row">
+                <span class="label"><i data-lucide="alert-triangle" class="text-danger text-xs"></i> 딴짓 시간</span>
+                <span id="stat-distract-time" class="value">0초</span>
+              </div>
+              <div class="stat-row">
+                <span class="label"><i data-lucide="help-circle" class="text-muted text-xs"></i> 미분류 시간</span>
+                <span id="stat-none-time" class="value">0초</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Visited Sites Section -->
+        <section class="sites-section">
+          <div class="section-header">
+            <h3><i data-lucide="link"></i> 방문한 사이트 기록</h3>
+            <span id="sites-counter" class="badge">총 0개 사이트</span>
+          </div>
+
+          <!-- Three Column Site Categorizer Layout -->
+          <div class="sites-board">
+            
+            <!-- COLUMN 1: WORK & STUDY SITES -->
+            <div class="site-column work-column glass">
+              <div class="column-header">
+                <i data-lucide="check-circle" class="icon text-success animate-pulse-slow"></i>
+                <h4>과제 / 공부에 필요한 사이트</h4>
+              </div>
+              <div id="sites-list-work" class="sites-list">
+                <div class="empty-column-msg">이곳으로 유용한 사이트를 옮겨보세요.</div>
+              </div>
+            </div>
+
+            <!-- COLUMN 2: DISTRACTION SITES -->
+            <div class="site-column distract-column glass">
+              <div class="column-header">
+                <i data-lucide="alert-triangle" class="icon text-danger"></i>
+                <h4>딴짓 / 불필요한 사이트</h4>
+              </div>
+              <div id="sites-list-distract" class="sites-list">
+                <div class="empty-column-msg">과제 중 딴짓한 기록이 이곳에 나타납니다.</div>
+              </div>
+            </div>
+
+            <!-- COLUMN 3: UNCLASSIFIED SITES -->
+            <div class="site-column unclassified-column glass">
+              <div class="column-header">
+                <i data-lucide="help-circle" class="icon text-muted"></i>
+                <h4>미분류 사이트 (방금 방문)</h4>
+              </div>
+              <div id="sites-list-none" class="sites-list">
+                <div class="empty-column-msg">타이머가 켜진 상태에서 방문한 사이트들이 이곳에 추가됩니다.</div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- ================= MODALS ================= -->
+
+  <!-- Modal 1: Add Task Modal -->
+  <div id="add-task-modal" class="modal">
+    <div class="modal-content glass">
+      <div class="modal-header">
+        <h3>새 과제 추가</h3>
+        <button class="btn-close" onclick="closeModal('add-task-modal')"><i data-lucide="x"></i></button>
+      </div>
+      <form id="add-task-form">
+        <div class="form-group">
+          <label for="task-title-input">과제 제목 / 연구 주제</label>
+          <input type="text" id="task-title-input" required placeholder="예: 알고리즘 과제, 졸업논문 자료조사" autofocus autocomplete="off">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('add-task-modal')">취소</button>
+          <button type="submit" class="btn btn-primary">과제 생성</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 2: Extension Guide Modal -->
+  <div id="guide-modal" class="modal">
+    <div class="modal-content glass max-w-lg">
+      <div class="modal-header">
+        <h3>Chrome 확장 프로그램 연동 안내</h3>
+        <button class="btn-close" onclick="closeModal('guide-modal')"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body font-sm">
+        <p class="mb-3">노트북에서 활성화된 탭 주소 및 지속시간을 실시간으로 추적하려면 Chrome 확장이 필요합니다.</p>
+        
+        <ol class="guide-steps">
+          <li>
+            <strong>확장 프로그램 폴더 준비</strong>
+            <p>프로젝트 폴더 내 <code>/extension</code> 폴더를 로컬 디렉토리에 둡니다.</p>
+          </li>
+          <li>
+            <strong>크롬 확장 페이지 이동</strong>
+            <p>크롬 주소창에 <code>chrome://extensions</code>를 입력하고 엔터를 누릅니다.</p>
+          </li>
+          <li>
+            <strong>개발자 모드 활성화</strong>
+            <p>우측 상단의 <strong>개발자 모드</strong> 스위치를 켭니다.</p>
+          </li>
+          <li>
+            <strong>패키지 되지 않은 확장 로드</strong>
+            <p>좌측 상단의 <strong>[압축해제된 확장 프로그램을 로드합니다]</strong> (Load unpacked) 버튼을 클릭합니다.</p>
+          </li>
+          <li>
+            <strong>폴더 선택</strong>
+            <p>컴퓨터 내에 준비된 <code>/extension</code> 폴더를 통째로 선택합니다.</p>
+          </li>
+          <li>
+            <strong>연동 키(Sync Key) 설정</strong>
+            <p>웹 화면 우측 상단이나 대시보드에 나타나는 <strong>고유 User UID</strong>를 복사한 후, 크롬 확장 아이콘을 클릭하여 나타나는 팝업에 입력하고 [연동하기] 버튼을 누르면 연동이 끝납니다.</p>
+          </li>
+        </ol>
+
+        <!-- Sync Key Generator Box -->
+        <div class="sync-key-box mt-4 glass-dark">
+          <h5>내 연동 Sync Key (UID)</h5>
+          <div class="sync-key-input-group">
+            <input type="text" id="sync-key-value" readonly value="로그인 후 확인 가능합니다">
+            <button id="btn-copy-sync-key" class="btn btn-xs btn-primary">복사</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary btn-block" onclick="closeModal('guide-modal')">알겠습니다</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main JavaScript modules -->
+  <script type="module" src="app.js"></script>
+  
+  <!-- Global Helper UI scripts (Vanilla Modal / Tab Helpers) -->
+  <script>
+    function switchAuthTab(type) {
+      document.querySelectorAll('.auth-tab').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+      
+      if(type === 'login') {
+        document.getElementById('tab-login').classList.add('active');
+        document.getElementById('login-form').classList.add('active');
+      } else {
+        document.getElementById('tab-signup').classList.add('active');
+        document.getElementById('signup-form').classList.add('active');
+      }
+    }
+    
+    function openModal(id) {
+      document.getElementById(id).classList.add('active');
+    }
+    
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('active');
+    }
+    
+    // Close modals on clicking outside content
+    window.addEventListener('click', function(e) {
+      if(e.target.classList.contains('modal')) {
+        e.target.classList.remove('active');
+      }
+    });
+  </script>
+</body>
+</html>

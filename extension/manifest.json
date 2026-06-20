@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "FocusGuard Companion",
+  "version": "1.0.0",
+  "description": "과제 집중 도우미(FocusGuard)의 실시간 노트북 탭 사용 시간 추적을 위한 연동 프로그램입니다.",
+  "permissions": [
+    "tabs",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://*.firebaseio.com/"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  }
+}
+

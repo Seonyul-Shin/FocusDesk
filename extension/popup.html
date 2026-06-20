@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>FocusGuard Sync</title>
+  <style>
+    :root {
+      --bg-primary: #0b0f19;
+      --bg-secondary: #0f172a;
+      --bg-tertiary: #1e293b;
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --success: #10b981;
+      --danger: #f43f5e;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border-glass: rgba(255, 255, 255, 0.08);
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      width: 320px;
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      padding: 1rem;
+      border: 1px solid var(--border-glass);
+    }
+    
+    h3 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+      letter-spacing: -0.3px;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .logo-icon {
+      color: var(--primary);
+    }
+    
+    .subtitle {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+    }
+    
+    .status-panel {
+      background-color: var(--bg-secondary);
+      border: 1px solid var(--border-glass);
+      border-radius: 8px;
+      padding: 0.75rem;
+      margin-bottom: 1rem;
+      font-size: 0.8rem;
+    }
+    
+    .status-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.4rem;
+    }
+    
+    .status-row:last-child {
+      margin-bottom: 0;
+    }
+    
+    .status-label {
+      color: var(--text-muted);
+    }
+    
+    .status-val {
+      font-weight: 600;
+    }
+    
+    .status-badge {
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 700;
+    }
+    
+    .status-badge.connected {
+      background-color: rgba(16, 185, 129, 0.15);
+      color: var(--success);
+    }
+    
+    .status-badge.disconnected {
+      background-color: rgba(244, 63, 94, 0.15);
+      color: var(--danger);
+    }
+    
+    .status-badge.tracking {
+      background-color: rgba(99, 102, 241, 0.15);
+      color: var(--primary);
+      animation: pulse-badge 1.5s infinite;
+    }
+    
+    .form-group {
+      margin-bottom: 0.85rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+    
+    label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    
+    input {
+      background-color: var(--bg-secondary);
+      border: 1px solid var(--border-glass);
+      border-radius: 6px;
+      padding: 0.5rem;
+      color: var(--text-main);
+      font-size: 0.8rem;
+      width: 100%;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+    
+    input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    
+    .btn {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 0.6rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.85rem;
+      width: 100%;
+      transition: background-color 0.2s, transform 0.1s;
+    }
+    
+    .btn:hover {
+      background-color: var(--primary-hover);
+    }
+    .btn:active {
+      transform: scale(0.98);
+    }
+    
+    .toast {
+      margin-top: 0.75rem;
+      font-size: 0.75rem;
+      text-align: center;
+      color: var(--success);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .toast.show {
+      opacity: 1;
+    }
+    
+    @keyframes pulse-badge {
+      0%, 100% { opacity: 0.8; }
+      50% { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <h3>
+    <svg class="logo-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+    </svg>
+    FocusGuard Companion
+  </h3>
+  <div class="subtitle">과제 딴짓 실시간 측정 도구</div>
+  
+  <div class="status-panel">
+    <div class="status-row">
+      <span class="status-label">연동 상태</span>
+      <span id="sync-status" class="status-badge disconnected">미설정</span>
+    </div>
+    <div class="status-row">
+      <span class="status-label">측정 상태</span>
+      <span id="tracking-status" class="status-val text-muted">대기 중</span>
+    </div>
+  </div>
+  
+  <form id="sync-form">
+    <div class="form-group">
+      <label for="syncKey">Sync Key (대시보드 User UID)</label>
+      <input type="text" id="syncKey" required placeholder="User UID를 입력하세요">
+    </div>
+    <div class="form-group">
+      <label for="databaseURL">Firebase Database URL</label>
+      <input type="url" id="databaseURL" required placeholder="https://your-project.firebaseio.com">
+    </div>
+    <button type="submit" class="btn">연동 및 설정 저장</button>
+  </form>
+  
+  <div id="toast" class="toast">설정이 저장되었습니다!</div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
